@@ -1,0 +1,152 @@
+# =========================================================
+# Железобетонный .gitignore для веб-проектов (2026)
+# PHP/MODX + Node/Next + Python + IDE + секреты + мусор
+# =========================================================
+
+# ----------------------------
+# OS / Editor / IDE мусор
+# ----------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*.tmp
+*~
+*.bak
+*.orig
+*.rej
+
+.idea/
+.vscode/
+*.code-workspace
+
+# При желании можно коммитить часть VSCode:
+# .vscode/*
+# !.vscode/extensions.json
+# !.vscode/settings.json
+
+# ----------------------------
+# Логи / временные файлы / дампы / архивы
+# ----------------------------
+*.log
+logs/
+log/
+tmp/
+temp/
+.cache/
+cache/
+
+*.sql
+*.sqlite
+*.sqlite3
+*.gz
+*.zip
+*.7z
+*.rar
+*.tar
+*.tgz
+backup/
+backups/
+dump/
+dumps/
+
+# ----------------------------
+# Секреты (ВАЖНО)
+# ----------------------------
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Токены/ключи/сертификаты
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+
+# Если вдруг кто-то положил ssh-ключи в проект (не надо, но бывает)
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+# NPM/Composer токены
+.npmrc
+composer-auth.json
+auth.json
+
+# ----------------------------
+# PHP / Composer
+# ----------------------------
+/vendor/
+/composer.phar
+
+# В большинстве проектов composer.lock НУЖЕН (фиксирует версии).
+# Если это библиотека (а не приложение) и lock мешает — уберите его из репо осознанно.
+# composer.lock
+
+# ----------------------------
+# Node.js / фронтенд сборка (React/Next/Vite/etc.)
+# ----------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+dist/
+build/
+.out/
+coverage/
+
+# Next.js
+.next/
+out/
+
+# Turbo / Vite / прочие кэши
+.turbo/
+.vite/
+.eslintcache
+
+# ----------------------------
+# Python
+# ----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+
+.venv/
+venv/
+ENV/
+env/
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+
+# ----------------------------
+# MODX Revolution (типовой минимум, чтобы не тащить мусор)
+# ----------------------------
+/core/cache/
+/core/packages/
+/assets/cache/
+
+# Конфиг MODX часто содержит пароли (DB) — лучше не коммитить.
+# Вместо этого держите пример: config.inc.php.sample
+/core/config/config.inc.php
+!/core/config/config.inc.php.sample
+
+# Если используете кастомные экспорты/бэкапы внутри core
+/core/export/
+
+# ----------------------------
+# Прочие типовые runtime-папки приложений
+# ----------------------------
+runtime/
+storage/
+var/
