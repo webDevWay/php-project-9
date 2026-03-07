@@ -33,6 +33,7 @@
         "slim/psr7": "^1.8",
         "slim/http": "^1.4",
         "slim/php-view": "^3.4",
-        "php-di/php-di": "^7.1"
+        "php-di/php-di": "^7.1",
+        "slim/flash": "^0.4.0"
     }
 }
