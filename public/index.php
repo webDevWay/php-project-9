@@ -2,7 +2,8 @@
 
 session_start();
 
-require __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../src/database.php';
 
 use function App\Database\dbConnection; //$pdo
 use DI\Container;
@@ -76,27 +77,34 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
 
 $app->post('/urls', function ($request, $response) use ($pdo) {
     $url = $request->getParsedBody('url');
-    $url['url'] = normalizeUrl($url['url']);
+    error_log("=== POST /urls ===");
+    error_log("Original URL: " . $url['url']);
+    $url['url'] = normalizeUrl($url['url']);    
+    error_log("Normalized URL: " . $url['url']);
     $valid = new Valitron\Validator($url);
     $valid->rule('required', 'url')->message('URL не должен быть пустым')
         ->rule('url', 'url')->message('Некорректный URL')
         ->rule('lengthMax', 'url', 255)->message('Превышено допустимое количество символов');
     if ($valid->validate($url)) {
         $name = $url['url'];
+         error_log("Checking if URL exists: " . $name);
         $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
         $stmt->execute(["name" => $name]);
         $url = $stmt->fetch();
         if ($url) {
+            error_log("URL EXISTS! ID: " . $url['id']);
             $this->get('flash')->addMessage('warning', 'Страница уже существует');
             $route = $this->get("router")->urlFor('show', ['id' => $url['id']]);
             return $response->withRedirect($route);
         } else {
+             error_log("URL DOES NOT EXIST - inserting new record");
             $date = Carbon::now()->toDateTimeString();
             $sql = "INSERT INTO urls (name, created_at) VALUES (:name, :created_at)";
             $stmt = $pdo->prepare($sql);
             $stmt->bindParam(':name', $name);
             $stmt->bindParam(':created_at', $date);
             $stmt->execute();
+            error_log("INSERTED! New ID: " . $pdo->lastInsertId());
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $route = $this->get("router")->urlFor('show', ['id' => $pdo->lastInsertId()]);
             return $response->withRedirect($route);

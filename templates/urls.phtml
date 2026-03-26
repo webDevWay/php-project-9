@@ -13,11 +13,7 @@
             <?php foreach ($urls as $url): ?>
             <tr>
                 <td><?= $url['id'] ?></td>
-                <td>
-                    <a href="/urls/<?= $url['id'] ?>">
-                        <?= htmlspecialchars($url['name']) ?>
-                    </a>
-                </td>
+                <td><a href="/urls/<?= $url['id'] ?>"><?= htmlspecialchars($url['name']) ?></a></td>
                 <td><?=htmlspecialchars($url['created_at'])?></td>
                 <td><?=htmlspecialchars($url['status_code'])?></td>
             </tr>
