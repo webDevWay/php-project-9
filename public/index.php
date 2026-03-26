@@ -60,46 +60,14 @@ $app->get('/', function ($request, $response) {
 })->setName('index');
 
 $app->get('/urls', function ($request, $response, $args) use ($pdo) {
-    $stmt = $pdo->query("SELECT COUNT(*) FROM urls");
-    $count = $stmt->fetchColumn();
-    error_log("=== /urls PAGE ===");
-    error_log("Total URLs in database: " . $count);
-    
-    $stmt = $pdo->query("SELECT id, name, created_at FROM urls ORDER BY id LIMIT 20");
-    $urls = $stmt->fetchAll();
-    error_log("First 20 URLs:");
-    foreach ($urls as $url) {
-        error_log("  ID: {$url['id']}, Name: {$url['name']}");
-    }
-    
-    $stmt = $pdo->query("SELECT id, name, created_at FROM urls ORDER BY id DESC LIMIT 20");
-    $urls = $stmt->fetchAll();
-    error_log("Last 20 URLs:");
-    foreach ($urls as $url) {
-        error_log("  ID: {$url['id']}, Name: {$url['name']}");
-    }
-    
-    $stmt = $pdo->query("
-        SELECT name, COUNT(*) as cnt 
-        FROM urls 
-        GROUP BY name 
-        HAVING COUNT(*) > 1
-    ");
-    $duplicates = $stmt->fetchAll();
-    if ($duplicates) {
-        error_log("DUPLICATES FOUND:");
-        foreach ($duplicates as $dup) {
-            error_log("  {$dup['name']} - {$dup['cnt']} times");
-        }
-    } else {
-        error_log("No duplicates found");
-    }
-
-
     $messages = $this->get('flash')->getMessages();
     $flash = getFlashData($messages);
-    $sql = "SELECT MAX(url_checks.created_at) AS created_at, url_checks.status_code, urls.id, urls.name 
-        FROM urls LEFT OUTER JOIN url_checks ON url_checks.url_id = urls.id GROUP BY url_checks.url_id, urls.id, url_checks.status_code 
+    $sql = "SELECT MAX(url_checks.created_at) AS created_at, 
+        url_checks.status_code, 
+        urls.id, 
+        urls.name 
+        FROM urls LEFT OUTER JOIN url_checks ON url_checks.url_id = urls.id 
+        GROUP BY url_checks.url_id, urls.id, url_checks.status_code 
         ORDER BY urls.id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
@@ -113,34 +81,27 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
 
 $app->post('/urls', function ($request, $response) use ($pdo) {
     $url = $request->getParsedBody('url');
-    error_log("=== POST /urls ===");
-    error_log("Original URL: " . $url['url']);
     $url['url'] = normalizeUrl($url['url']);    
-    error_log("Normalized URL: " . $url['url']);
     $valid = new Valitron\Validator($url);
     $valid->rule('required', 'url')->message('URL не должен быть пустым')
         ->rule('url', 'url')->message('Некорректный URL')
         ->rule('lengthMax', 'url', 255)->message('Превышено допустимое количество символов');
     if ($valid->validate($url)) {
         $name = $url['url'];
-         error_log("Checking if URL exists: " . $name);
         $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
         $stmt->execute(["name" => $name]);
         $url = $stmt->fetch();
         if ($url) {
-            error_log("URL EXISTS! ID: " . $url['id']);
             $this->get('flash')->addMessage('warning', 'Страница уже существует');
             $route = $this->get("router")->urlFor('show', ['id' => $url['id']]);
             return $response->withRedirect($route);
         } else {
-             error_log("URL DOES NOT EXIST - inserting new record");
             $date = Carbon::now()->toDateTimeString();
             $sql = "INSERT INTO urls (name, created_at) VALUES (:name, :created_at)";
             $stmt = $pdo->prepare($sql);
             $stmt->bindParam(':name', $name);
             $stmt->bindParam(':created_at', $date);
             $stmt->execute();
-            error_log("INSERTED! New ID: " . $pdo->lastInsertId());
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $route = $this->get("router")->urlFor('show', ['id' => $pdo->lastInsertId()]);
             return $response->withRedirect($route);
