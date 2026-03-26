@@ -88,7 +88,7 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         $url = $stmt->fetch();
         if ($url) {
             $this->get('flash')->addMessage('info', 'Страница уже существует');
-            $route = $this->get("router")->urlFor('show', ['id' => $url['id']]);
+            $route = $this->get("router")->urlFor('/');
             return $response->withRedirect($route);
         } else {
             $date = Carbon::now()->toDateTimeString();
