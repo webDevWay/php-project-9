@@ -5,12 +5,10 @@
     "autoload": {
         "psr-4": {
             "App\\": "src/"
-        }
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "App\\": "tests/"
-        }
+        },
+        "files":[
+            "src/database.php"
+        ]
     },
     "bin": ["public/index.php"],
      "scripts": {
@@ -26,7 +24,8 @@
     "minimum-stability": "stable",
     "require-dev": {
         "squizlabs/php_codesniffer": "*",
-        "friendsofphp/php-cs-fixer": "^3.94"
+        "friendsofphp/php-cs-fixer": "^3.94",
+        "symfony/var-dumper": "^7.4"
     },
     "require": {
         "slim/slim": "4.*",
@@ -34,6 +33,10 @@
         "slim/http": "^1.4",
         "slim/php-view": "^3.4",
         "php-di/php-di": "^7.1",
-        "slim/flash": "^0.4.0"
+        "slim/flash": "^0.4.0",
+        "vlucas/valitron": "^1.4",
+        "nesbot/carbon": "^3.11",
+        "guzzlehttp/guzzle": "^7.10",
+        "illuminate/support": "^13.2"
     }
 }

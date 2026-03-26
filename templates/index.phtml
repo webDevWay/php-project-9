@@ -1,6 +1,18 @@
-<h2>Анализатор страниц</h2>
-<h3>Бесплатно проверяйте сайты на SEO пригодность</h3>
-<form action="">
-    <input type="text" placeholder="https://www.example.com">
-    <input type="button" value="Проверить">
-</form>
+<div class="row">
+    <div class="col-12 col-md-10 col-lg-8 mx-auto bg-light p-4 rounded">
+        <p class="display-4  mb-4">Анализатор страниц</p>
+        <h5 class="mb-4">Бесплатно проверяйте сайты на SEO пригодность</h5>
+        <form action="/urls" method="post" class="d-flex justify-content-center">
+            <div class="input-group mb-3">
+                <input 
+                    type="text" 
+                    name="url" 
+                    class="form-control form-control-lg"
+                    placeholder="https://www.example.com"
+                    value="<?= htmlspecialchars($wrongUrl ?? '') ?>"
+                >
+                <input type="submit" class="btn btn-primary btn-lg" value="Проверить">
+            </div>
+        </form>
+    </div>
+</div>

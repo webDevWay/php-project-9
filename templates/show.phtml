@@ -1,0 +1,51 @@
+<h1 class="mb-4">Сайт: <?= htmlspecialchars($url['name']) ?></h1>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped" data-test="url">
+        <tbody>
+            <tr>
+                <th>ID</th>
+                <td><?= $url['id'] ?></td>
+            </tr>
+            <tr>
+                <th>Имя</th>
+                <td><?= htmlspecialchars($url['name']) ?></td>
+            </tr>
+            <tr>
+                <th>Дата создания</th>
+                <td><?= $url['created_at'] ?></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2 class="mb-3 mt-5">Проверки</h2>
+<form method="post" action="/urls/<?=$url['id']?>/checks">
+    <input type="submit" class="btn btn-primary btn-md" value="Запустить проверку">
+</form>
+<div class="table-responsive mt-2">
+    <table class="table table-bordered table-striped" data-test="checks">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Код ответа</th>
+                <th>h1</th>
+                <th>title</th>
+                <th>description</th>
+                <th>Дата создания</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($url_check as $url): ?>
+                <tr>                
+                    <td><?=htmlspecialchars($url['id'])?></td>
+                    <td><?=htmlspecialchars($url['status_code'])?></td>
+                    <td><?=htmlspecialchars($url['h1'])?></td>
+                    <td><?=htmlspecialchars($url['title'])?></td>
+                    <td><?=htmlspecialchars($url['description'])?></td>
+                    <td><?=htmlspecialchars($url['created_at'])?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
