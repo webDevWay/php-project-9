@@ -2,6 +2,14 @@
 
 session_start();
 
+// Включаем отображение всех ошибок
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+
+// Для PHP 8.4 также включаем Deprecated
+error_reporting(E_ALL | E_DEPRECATED | E_STRICT);
+
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../src/database.php';
 
@@ -71,6 +79,7 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
         ORDER BY urls.id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
+    dump($urls);
     $content = [
         'urls' => $urls,
         'flash' => $flash['message'] ?? '',
