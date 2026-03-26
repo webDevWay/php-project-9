@@ -60,6 +60,42 @@ $app->get('/', function ($request, $response) {
 })->setName('index');
 
 $app->get('/urls', function ($request, $response, $args) use ($pdo) {
+    $stmt = $pdo->query("SELECT COUNT(*) FROM urls");
+    $count = $stmt->fetchColumn();
+    error_log("=== /urls PAGE ===");
+    error_log("Total URLs in database: " . $count);
+    
+    $stmt = $pdo->query("SELECT id, name, created_at FROM urls ORDER BY id LIMIT 20");
+    $urls = $stmt->fetchAll();
+    error_log("First 20 URLs:");
+    foreach ($urls as $url) {
+        error_log("  ID: {$url['id']}, Name: {$url['name']}");
+    }
+    
+    $stmt = $pdo->query("SELECT id, name, created_at FROM urls ORDER BY id DESC LIMIT 20");
+    $urls = $stmt->fetchAll();
+    error_log("Last 20 URLs:");
+    foreach ($urls as $url) {
+        error_log("  ID: {$url['id']}, Name: {$url['name']}");
+    }
+    
+    $stmt = $pdo->query("
+        SELECT name, COUNT(*) as cnt 
+        FROM urls 
+        GROUP BY name 
+        HAVING COUNT(*) > 1
+    ");
+    $duplicates = $stmt->fetchAll();
+    if ($duplicates) {
+        error_log("DUPLICATES FOUND:");
+        foreach ($duplicates as $dup) {
+            error_log("  {$dup['name']} - {$dup['cnt']} times");
+        }
+    } else {
+        error_log("No duplicates found");
+    }
+
+
     $messages = $this->get('flash')->getMessages();
     $flash = getFlashData($messages);
     $sql = "SELECT MAX(url_checks.created_at) AS created_at, url_checks.status_code, urls.id, urls.name 
