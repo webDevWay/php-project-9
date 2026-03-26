@@ -54,7 +54,7 @@ $app->get('/', function ($request, $response) {
         'flash' => $flash['message'] ?? '',
         'type' => $flash['type'] ?? '',
         'wrongUrl' => $wrongUrl,
-        ];        
+        ];
     return $this->get('renderer')->render($response, 'index.phtml', $content);
 })->setName('index');
 
@@ -100,14 +100,14 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
             $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
             $route = $this->get("router")->urlFor('show', ['id' => $pdo->lastInsertId()]);
             return $response->withRedirect($route);
-        }        
+        }
     } else {
         $error = $valid->errors("url")[0];
         $this->get('flash')->addMessage('wrongUrl', $url['url']);
         $this->get('flash')->addMessage('danger', $error);
         $route = $this->get("router")->urlFor('index');
         return $response->withRedirect($route);
-    }   
+    }
 });
 
 $app->get('/urls/{id}', function ($request, $response, $args) use ($pdo) {
@@ -121,7 +121,7 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($pdo) {
     $url_check = $stmt->fetchAll();
     foreach ($url_check as &$check) {
         $check['h1'] = Str::limit($check['h1'], 200, '...');
-        $check['title'] = Str::limit($check['title'], 200,'...');
+        $check['title'] = Str::limit($check['title'], 200, '...');
         $check['description'] = Str::limit($check['description'], 200, '...');
     }
     unset($check);
@@ -149,7 +149,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         $statusCode = $responseGuzzle->getStatusCode();
         $html = (string) $responseGuzzle->getBody();
         $parsedData = parseHtmlData($html, $url['name']);
-        libxml_clear_errors(); 
+        libxml_clear_errors();
 
         $sql = "INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at) 
                 VALUES (:url_id, :status_code, :h1, :title, :description, :created_at)";
@@ -167,7 +167,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     } catch (GuzzleHttp\Exception\RequestException $e) {
         $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
     } catch (Exception $e) {
-        $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');      
+        $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
     }
     $route = $this->get('router')->urlFor('show', ['id' => $args['url_id']]);
     return $response->withRedirect($route);
@@ -175,7 +175,8 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
 
 $app->run();
 
-function normalizeUrl($url) {
+function normalizeUrl($url)
+{
     $parsed = parse_url($url);
     $scheme = $parsed['scheme'] ?? 'http';
     $host = $parsed['host'] ?? "";
@@ -183,7 +184,8 @@ function normalizeUrl($url) {
     return strtolower("{$scheme}://{$host}");
 }
 
-function parseHtmlData($html, $url) {
+function parseHtmlData($html, $url)
+{
     $data = [
         'h1' => null,
         'title' => null,
@@ -217,7 +219,8 @@ function parseHtmlData($html, $url) {
     }
 }
 
-function getFlashData($messages) {
+function getFlashData($messages)
+{
     $flash = [];
     foreach ($messages as $type => $messages) {
         foreach ($messages as $message) {
