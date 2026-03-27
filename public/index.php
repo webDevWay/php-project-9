@@ -79,7 +79,6 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
         ORDER BY urls.id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
-    dump($urls);
     $content = [
         'urls' => $urls,
         'flash' => $flash['message'] ?? '',
@@ -134,9 +133,9 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt->execute([':id' => $args['id']]);
     $url_check = $stmt->fetchAll();
     foreach ($url_check as &$check) {
-        $check['h1'] = Str::limit($check['h1'], 200, '...');
-        $check['title'] = Str::limit($check['title'], 200, '...');
-        $check['description'] = Str::limit($check['description'], 200, '...');
+        $check['h1'] = Str::limit((string)$check['h1'], 200, '...') ?? '';
+        $check['title'] = Str::limit((string)$check['title'], 200, '...') ?? '';
+        $check['description'] = Str::limit((string)$check['description'], 200, '...') ?? '';
     }
     unset($check);
     $content = [
