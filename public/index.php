@@ -110,8 +110,11 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         $error = $valid->errors("url")[0];
         $this->get('flash')->addMessage('wrongUrl', $url['url']);
         $this->get('flash')->addMessage('danger', $error);
-        $route = $this->get("router")->urlFor('index');
-        return $response->withRedirect($route);
+        return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
+            'flash' => $error ?? '',
+            'type' => 'danger',
+            'wrongUrl' => $url['url']
+        ]);
     }
 });
 
