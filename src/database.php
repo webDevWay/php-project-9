@@ -15,13 +15,23 @@ if (file_exists(__DIR__ . '/../.env')) {
 
 function dbConnection()
 {
-    $databaseUrl = parse_url($_ENV['DATABASE_URL']);
+    $databaseUrl = getenv('DATABASE_URL') ?: $_ENV['DATABASE_URL'] ?? null;
 
-    $username = $databaseUrl['user'] ?? $_ENV['DATABASE_URL']; // janedoe
-    $password = $databaseUrl['pass'] ?? $_ENV['DB_URLS_PASS']; // mypassword
-    $host = $databaseUrl['host'] ?? $_ENV["DB_URLS_HOST"]; // localhost
-    $port = $databaseUrl['port'] ?? $_ENV['DB_URLS_PORT']; // 5432
-    $dbName = $databaseUrl['path'] ? ltrim($databaseUrl['path'], '/') : $_ENV['DB_URLS_NAME']; // urls
+    if ($databaseUrl) {
+        $url = parse_url($databaseUrl);
+
+        $host = $url['host'] ?? 'localhost';
+        $port = $url['port'] ?? '5432';
+        $dbName = ltrim($url['path'] ?? '', '/');
+        $username = $url['user'] ?? 'postgres';
+        $password = $url['pass'] ?? '';
+    } else {
+        $host = $_ENV['DB_URLS_HOST'] ?? getenv('DB_URLS_HOST') ?? 'localhost';
+        $port = $_ENV['DB_URLS_PORT'] ?? getenv('DB_URLS_PORT') ?? '5432';
+        $dbName = $_ENV['DB_URLS_NAME'] ?? getenv('DB_URLS_NAME') ?? 'urls';
+        $username = $_ENV['DB_URLS_USERNAME'] ?? getenv('DB_URLS_USERNAME') ?? 'postgres';
+        $password = $_ENV['DB_URLS_PASS'] ?? getenv('DB_URLS_PASS') ?? '';
+    }
 
     try {
         $dsn = "pgsql:host=$host;port=$port;dbname=$dbName";
