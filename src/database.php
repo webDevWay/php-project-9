@@ -33,7 +33,3 @@ function dbConnection()
         echo($e->getMessage());
     }
 }
-
-$dbFirstCreate = dbConnection();
-$sql = file_get_contents('../database.sql');
-$dbFirstCreate->exec($sql);
