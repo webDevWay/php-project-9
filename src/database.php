@@ -26,11 +26,11 @@ function dbConnection()
         $username = $url['user'] ?? 'postgres';
         $password = $url['pass'] ?? '';
     } else {
-        $host = $_ENV['DB_URLS_HOST'] ?? getenv('DB_URLS_HOST') ?? 'localhost';
-        $port = $_ENV['DB_URLS_PORT'] ?? getenv('DB_URLS_PORT') ?? '5432';
-        $dbName = $_ENV['DB_URLS_NAME'] ?? getenv('DB_URLS_NAME') ?? 'urls';
-        $username = $_ENV['DB_URLS_USERNAME'] ?? getenv('DB_URLS_USERNAME') ?? 'postgres';
-        $password = $_ENV['DB_URLS_PASS'] ?? getenv('DB_URLS_PASS') ?? '';
+        $host = $_ENV['DB_URLS_HOST'] ?: getenv('DB_URLS_HOST') ?: 'localhost';
+        $port = $_ENV['DB_URLS_PORT'] ?: getenv('DB_URLS_PORT') ?: '5432';
+        $dbName = $_ENV['DB_URLS_NAME'] ?: getenv('DB_URLS_NAME') ?: 'urls';
+        $username = $_ENV['DB_URLS_USERNAME'] ?: getenv('DB_URLS_USERNAME') ?: 'postgres';
+        $password = $_ENV['DB_URLS_PASS'] ?: getenv('DB_URLS_PASS') ?: '';
     }
 
     try {
