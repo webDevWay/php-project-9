@@ -13,7 +13,7 @@ if (file_exists(__DIR__ . '/../.env')) {
 
 function dbConnection()
 {
-    $databaseUrl = parse_url($_ENV['DATABASE_URL']) ?? null;
+    $databaseUrl = parse_url($_ENV['DATABASE_URL']) ?? "";
 
     $username = $databaseUrl['user'] ?? $_ENV['DATABASE_URL']; // janedoe
     $password = $databaseUrl['pass'] ?? $_ENV['DB_URLS_PASS']; // mypassword
@@ -29,7 +29,7 @@ function dbConnection()
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
         return $pdo;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         echo($e->getMessage());
     }
 }

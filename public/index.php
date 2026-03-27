@@ -81,12 +81,12 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
 
 $app->post('/urls', function ($request, $response) use ($pdo) {
     $url = $request->getParsedBody('url');
-    $url['url'] = normalizeUrl($url['url']);    
+    $url['url'] = normalizeUrl($url['url']);
     $valid = new Valitron\Validator($url);
     $valid->rule('required', 'url')->message('URL не должен быть пустым')
         ->rule('url', 'url')->message('Некорректный URL')
         ->rule('lengthMax', 'url', 255)->message('Превышено допустимое количество символов');
-    if ($valid->validate($url)) {
+    if ($valid->validate()) {
         $name = $url['url'];
         $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
         $stmt->execute(["name" => $name]);
@@ -107,7 +107,9 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
             return $response->withRedirect($route);
         }
     } else {
-        $error = $valid->errors("url")[0];
+        //$error = $valid->errors("url")[0];
+        $errors = $valid->errors('url');
+        $error = is_array($errors) ? ($errors[0] ?? '') : '';
         $this->get('flash')->addMessage('wrongUrl', $url['url']);
         $this->get('flash')->addMessage('danger', $error);
         return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
@@ -183,7 +185,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
 
 $app->run();
 
-function normalizeUrl($url)
+function normalizeUrl($url): string
 {
     $parsed = parse_url($url);
     $scheme = $parsed['scheme'] ?? 'http';
@@ -192,12 +194,12 @@ function normalizeUrl($url)
     return strtolower("{$scheme}://{$host}");
 }
 
-function parseHtmlData($html, $url)
+function parseHtmlData($html, $url): array
 {
     $data = [
-        'h1' => null,
-        'title' => null,
-        'description' => null
+        'h1' => '',
+        'title' => '',
+        'description' => ''
     ];
 
     $dom = new DOMDocument();
@@ -206,11 +208,11 @@ function parseHtmlData($html, $url)
         $dom->loadHTML($html);
 
         $h1Tags = $dom->getElementsByTagName('h1');
-        if ($h1Tags->length > 0) {
+        if ($h1Tags->length > 0 && $h1Tags->item(0) !== null) {
             $data['h1'] = trim($h1Tags->item(0)->textContent);
         }
         $titleTags = $dom->getElementsByTagName('title');
-        if ($titleTags->length > 0) {
+        if ($titleTags->length > 0 && $titleTags->item(0) !== null) {
             $data['title'] = trim($titleTags->item(0)->textContent);
         }
         $metaTags = $dom->getElementsByTagName('meta');
@@ -227,7 +229,7 @@ function parseHtmlData($html, $url)
     }
 }
 
-function getFlashData($messages)
+function getFlashData($messages): array
 {
     $flash = [];
     foreach ($messages as $type => $messages) {
