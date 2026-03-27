@@ -113,7 +113,7 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         $this->get('flash')->addMessage('wrongUrl', $url['url']);
         $this->get('flash')->addMessage('danger', $error);
         return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
-            'flash' => $error ?? '',
+            'flash' => $error,
             'type' => 'danger',
             'wrongUrl' => $url['url']
         ]);
@@ -130,9 +130,9 @@ $app->get('/urls/{id}', function ($request, $response, $args) use ($pdo) {
     $stmt->execute([':id' => $args['id']]);
     $url_check = $stmt->fetchAll();
     foreach ($url_check as &$check) {
-        $check['h1'] = Str::limit((string)$check['h1'], 200, '...') ?? '';
-        $check['title'] = Str::limit((string)$check['title'], 200, '...') ?? '';
-        $check['description'] = Str::limit((string)$check['description'], 200, '...') ?? '';
+        $check['h1'] = Str::limit((string)$check['h1'], 200, '...');
+        $check['title'] = Str::limit((string)$check['title'], 200, '...');
+        $check['description'] = Str::limit((string)$check['description'], 200, '...');
     }
     unset($check);
     $content = [
@@ -185,7 +185,7 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
 
 $app->run();
 
-function normalizeUrl($url): string
+function normalizeUrl(string $url): string
 {
     $parsed = parse_url($url);
     $scheme = $parsed['scheme'] ?? 'http';
@@ -194,13 +194,17 @@ function normalizeUrl($url): string
     return strtolower("{$scheme}://{$host}");
 }
 
-function parseHtmlData($html, $url): array
+function parseHtmlData(string $html, string $url): array
 {
     $data = [
         'h1' => '',
         'title' => '',
         'description' => ''
     ];
+
+    if (empty($html)) {
+        return $data;
+    }
 
     $dom = new DOMDocument();
 
@@ -222,14 +226,13 @@ function parseHtmlData($html, $url): array
                 break;
             }
         }
-
-        return $data;
     } catch (Exception $e) {
         error_log("Failed to load HTML: " . $e->getMessage());
     }
+    return $data;
 }
 
-function getFlashData($messages): array
+function getFlashData(array $messages): array
 {
     $flash = [];
     foreach ($messages as $type => $messages) {

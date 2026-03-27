@@ -5,15 +5,17 @@ namespace App\Database;
 if (file_exists(__DIR__ . '/../.env')) {
     $env = parse_ini_file(__DIR__ . '/../.env');
 
-    foreach ($env as $key => $value) {
-        $_ENV[$key] = $value;
-        putenv("$key=$value");
+    if (is_array($env)) {
+        foreach ($env as $key => $value) {
+            $_ENV[$key] = $value;
+            putenv("$key=$value");
+        }
     }
 }
 
-function dbConnection()
+function dbConnection(): PDO
 {
-    $databaseUrl = parse_url($_ENV['DATABASE_URL']) ?? "";
+    $databaseUrl = parse_url($_ENV['DATABASE_URL']);
 
     $username = $databaseUrl['user'] ?? $_ENV['DATABASE_URL']; // janedoe
     $password = $databaseUrl['pass'] ?? $_ENV['DB_URLS_PASS']; // mypassword
