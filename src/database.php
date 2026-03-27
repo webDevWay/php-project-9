@@ -13,7 +13,7 @@ if (file_exists(__DIR__ . '/../.env')) {
     }
 }
 
-function dbConnection(): PDO
+function dbConnection(): ?\PDO
 {
     $databaseUrl = parse_url($_ENV['DATABASE_URL']);
 
