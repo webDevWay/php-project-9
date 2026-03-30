@@ -3,15 +3,12 @@
 session_start();
 
 require_once __DIR__ . '/../vendor/autoload.php';
-require_once __DIR__ . '/../src/database.php';
 
 use function App\Database\dbConnection; //$pdo
 use DI\Container;
-use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
-use Slim\Middleware\MethodOverrideMiddleware;
 use Slim\Routing\RouteContext;
-use Slim\Routing\RouteCollector;
+use Slim\Flash\Messages;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
@@ -32,7 +29,7 @@ $container->set('renderer', function () {
     return $renderer;
 });
 $container->set('flash', function () {
-    return new Slim\Flash\Messages();
+    return new Messages();
 });
 
 AppFactory::setContainer($container);
@@ -40,7 +37,6 @@ $app = AppFactory::createFromContainer($container);
 
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
-$app->add(MethodOverrideMiddleware::class);
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
 $container->set('router', function () use ($app) {
     return $app->getRouteCollector()->getRouteParser();
