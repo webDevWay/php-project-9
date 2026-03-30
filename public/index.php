@@ -183,6 +183,10 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
     return $response->withRedirect($route);
 })->setName('checks');
 
+$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
+    return $this->get('renderer')->render($response->withStatus(404), '404.phtml');
+});
+
 $app->run();
 
 function normalizeUrl(string $url): string
