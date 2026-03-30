@@ -15,3 +15,16 @@
 
 
 Page Analyzer – сайт, который анализирует указанные страницы на SEO пригодность по аналогии с PageSpeed Insights
+
+
+###### _Requirements:_  
+PHP 8.1+  
+Composer
+Slim 4.*
+
+
+###### _Installation:_  
+git clone https://github.com/webDevWay/php-project-9.git  
+cd php-project-9  
+make install  
+make start  
