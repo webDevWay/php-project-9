@@ -13,7 +13,7 @@ if (file_exists(__DIR__ . '/../.env')) {
     }
 }
 
-function dbConnection()
+function dbConnection(): ?\PDO
 {
     $databaseUrl = getenv('DATABASE_URL') ?: $_ENV['DATABASE_URL'] ?? null;
 
@@ -42,6 +42,8 @@ function dbConnection()
 
         return $pdo;
     } catch (\PDOException $e) {
-        echo($e->getMessage());
+        error_log($e->getMessage());
+
+        return null;
     }
 }
