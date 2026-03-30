@@ -27,7 +27,7 @@
     </nav>
 
     <main class="container flex-grow-1">
-        <?php if ($flash):?>
+        <?php if (isset($flash)):?>
                     <div class="alert alert-<?=$type?> alert-dismissible fade show" role="alert">
                         <?= htmlspecialchars($flash) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

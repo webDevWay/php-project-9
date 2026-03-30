@@ -10,7 +10,6 @@ use DI\Container;
 use DI\ContainerBuilder;
 use Slim\Factory\AppFactory;
 use Slim\Middleware\MethodOverrideMiddleware;
-use Slim\Flash\Messages;
 use Slim\Routing\RouteContext;
 use Slim\Routing\RouteCollector;
 use Psr\Http\Message\ResponseInterface as Response;
