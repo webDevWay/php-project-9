@@ -37,6 +37,7 @@
         "vlucas/valitron": "^1.4",
         "nesbot/carbon": "^3.11",
         "guzzlehttp/guzzle": "^7.10",
-        "illuminate/support": "^13.2"
+        "illuminate/support": "^13.2",
+        "ext-libxml": "*"
     }
 }

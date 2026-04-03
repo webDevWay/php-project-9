@@ -38,12 +38,12 @@
         <tbody>
             <?php foreach ($url_check as $url): ?>
                 <tr>                
-                    <td><?=htmlspecialchars($url['id'])?></td>
-                    <td><?=htmlspecialchars((string)$url['status_code'])?></td>
-                    <td><?=htmlspecialchars((string)$url['h1'])?></td>
-                    <td><?=htmlspecialchars((string)$url['title'])?></td>
-                    <td><?=htmlspecialchars((string)$url['description'])?></td>
-                    <td><?=htmlspecialchars((string)$url['created_at'])?></td>
+                    <td><?= htmlspecialchars($url['id']) ?></td>
+                    <td><?= htmlspecialchars((string)$url['status_code']) ?></td>
+                    <td><?= htmlspecialchars((string)$url['h1']) ?></td>
+                    <td><?= htmlspecialchars((string)$url['title']) ?></td>
+                    <td><?= htmlspecialchars((string)$url['description']) ?></td>
+                    <td><?= htmlspecialchars((string)$url['created_at']) ?></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

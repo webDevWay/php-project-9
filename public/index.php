@@ -7,11 +7,9 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use function App\Database\dbConnection; //$pdo
 use DI\Container;
 use Slim\Factory\AppFactory;
-use Slim\Routing\RouteContext;
 use Slim\Flash\Messages;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
-use Psr\Http\Server\RequestHandlerInterface as RequestHandler;
+use Slim\Views\PhpRenderer;
+use Slim\Middleware\MethodOverrideMiddleware;
 use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
@@ -23,11 +21,6 @@ $pdo = dbConnection();
 
 $container = new Container();
 
-$container->set('renderer', function () {
-    $renderer = new Slim\Views\PhpRenderer(__DIR__ . '/../templates');
-    $renderer->setLayout('layout.phtml');
-    return $renderer;
-});
 $container->set('flash', function () {
     return new Messages();
 });
@@ -35,116 +28,131 @@ $container->set('flash', function () {
 AppFactory::setContainer($container);
 $app = AppFactory::createFromContainer($container);
 
-$app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
-$errorMiddleware = $app->addErrorMiddleware(true, true, true);
+
 $container->set('router', function () use ($app) {
     return $app->getRouteCollector()->getRouteParser();
 });
 
-$app->get('/', function ($request, $response) {
-    $messages = $this->get('flash')->getMessages();
-    $flash = getFlashData($messages);
-    $wrongUrl = $this->get('flash')->getFirstMessage('wrongUrl');
-    $content = [
-        'flash' => $flash['message'] ?? '',
-        'type' => $flash['type'] ?? '',
-        'wrongUrl' => $wrongUrl,
-        ];
-    return $this->get('renderer')->render($response, 'index.phtml', $content);
+$container->set('renderer', function () use ($container) {
+    $renderer = new PhpRenderer(__DIR__ . '/../templates');
+    $renderer->setLayout('layout.phtml');
+    $renderer->addAttribute('router', $container->get('router'));
+    $renderer->addAttribute('wrongUrl', $container->get('flash')->getFirstMessage('wrongUrl'));
+    $renderer->addAttribute('flash', $container->get('flash')->getMessages());
+
+    return $renderer;
+});
+
+$app->addBodyParsingMiddleware();
+$app->addErrorMiddleware(true, true, true);
+
+$app->get('/', function ($request, $response) use ($app) {
+    return $this->get('renderer')->render($response, 'index.phtml');
 })->setName('index');
 
 $app->get('/urls', function ($request, $response, $args) use ($pdo) {
-    $messages = $this->get('flash')->getMessages();
-    $flash = getFlashData($messages);
-    $sql = "SELECT MAX(url_checks.created_at) AS created_at, 
-        url_checks.status_code, 
-        urls.id, 
-        urls.name 
-        FROM urls LEFT OUTER JOIN url_checks ON url_checks.url_id = urls.id 
-        GROUP BY url_checks.url_id, urls.id, url_checks.status_code 
-        ORDER BY urls.id DESC";
+    $sql = "SELECT id, name FROM urls ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
-    $content = [
-        'urls' => $urls,
-        'flash' => $flash['message'] ?? '',
-        'type' => $flash['type'] ?? '',
-        ];
-    return $this->get('renderer')->render($response, 'urls.phtml', $content);
+
+    foreach ($urls as &$url) {
+        $sql = "SELECT status_code, created_at FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$url['id']]);
+        $res = $stmt->fetch();
+
+        $url['status_code'] = $res['status_code'] ?? "";
+        $url['created_at'] = $res['created_at'] ?? "";
+    }
+
+    return $this->get('renderer')->render($response, 'urls/index.phtml', [
+        'urls' => $urls
+    ]);
 })->setName('urls');
 
 $app->post('/urls', function ($request, $response) use ($pdo) {
     $url = $request->getParsedBody('url');
-    $url['url'] = normalizeUrl($url['url']);
-    $valid = new Valitron\Validator($url);
+
+    $valid = new Validator($url);
     $valid->rule('required', 'url')->message('URL не должен быть пустым')
         ->rule('url', 'url')->message('Некорректный URL')
         ->rule('lengthMax', 'url', 255)->message('Превышено допустимое количество символов');
-    if ($valid->validate()) {
-        $name = $url['url'];
-        $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
-        $stmt->execute(["name" => $name]);
-        $url = $stmt->fetch();
-        if ($url) {
-            $this->get('flash')->addMessage('warning', 'Страница уже существует');
-            $route = $this->get("router")->urlFor('show', ['id' => $url['id']]);
-            return $response->withRedirect($route);
-        } else {
-            $date = Carbon::now()->toDateTimeString();
-            $sql = "INSERT INTO urls (name, created_at) VALUES (:name, :created_at)";
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindParam(':name', $name);
-            $stmt->bindParam(':created_at', $date);
-            $stmt->execute();
-            $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
-            $route = $this->get("router")->urlFor('show', ['id' => $pdo->lastInsertId()]);
-            return $response->withRedirect($route);
-        }
-    } else {
-        //$error = $valid->errors("url")[0];
+
+    if (!$valid->validate()) {
         $errors = $valid->errors('url');
         $error = is_array($errors) ? ($errors[0] ?? '') : '';
-        $this->get('flash')->addMessage('wrongUrl', $url['url']);
+
         $this->get('flash')->addMessage('danger', $error);
-        return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
-            'flash' => $error,
-            'type' => 'danger',
-            'wrongUrl' => $url['url']
-        ]);
+        $this->get('flash')->addMessage('wrongUrl', $url['url']);
+
+        $route = $this->get('router')->urlFor('index');
+
+        return $response->withRedirect($route);
+    }
+
+    $name = normalizeUrl($url['url']);
+
+    $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
+    $stmt->execute(["name" => $name]);
+    $url = $stmt->fetch();
+
+    if ($url) {
+        $this->get('flash')->addMessage('warning', 'Страница уже существует');
+
+        $route = $this->get("router")->urlFor('urls.show', ['id' => $url['id']]);
+
+        return $response->withRedirect($route);
+    } else {
+        $sql = "INSERT INTO urls (name, created_at) VALUES (:name, :created_at)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([
+            'name' => $name,
+            'created_at' => Carbon::now()
+            ]);
+
+        $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
+
+        $route = $this->get("router")->urlFor('urls.show', ['id' => $pdo->lastInsertId()]);
+
+        return $response->withRedirect($route);
     }
 });
 
-$app->get('/urls/{id}', function ($request, $response, $args) use ($pdo) {
-    $messages = $this->get('flash')->getMessages();
-    $flash = getFlashData($messages);
+$app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT * FROM urls WHERE id = :id");
     $stmt->execute([':id' => $args['id']]);
     $url = $stmt->fetch();
+
+    if (!$url) {
+        return $this->get('renderer')->render($response->withStatus(404), '404.phtml');
+    }
+
     $stmt = $pdo->prepare("SELECT * FROM url_checks WHERE url_id = :id");
     $stmt->execute([':id' => $args['id']]);
     $url_check = $stmt->fetchAll();
+
     foreach ($url_check as &$check) {
         $check['h1'] = Str::limit((string)$check['h1'], 200, '...');
         $check['title'] = Str::limit((string)$check['title'], 200, '...');
         $check['description'] = Str::limit((string)$check['description'], 200, '...');
     }
     unset($check);
+
     $content = [
         'url' => $url,
         'url_check' => $url_check,
-        'flash' => $flash['message'] ?? '',
-        'type' => $flash['type'] ?? '',
         ];
-    return $this->get('renderer')->render($response, 'show.phtml', $content);
-})->setName('show');
 
-$app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($pdo) {
-    $date = Carbon::now()->toDateTimeString();
+    return $this->get('renderer')->render($response, 'urls/show.phtml', $content);
+})->setName('urls.show');
+
+$app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args) use ($pdo) {
     $stmt = $pdo->prepare("SELECT name FROM urls WHERE id = :id");
     $stmt->execute([':id' => $args['url_id']]);
     $url = $stmt->fetch();
-    $client = new \GuzzleHttp\Client([
+
+    $client = new Client([
         'timeout' => 10,
         'allow_redirects' => true,
         ]);
@@ -169,14 +177,21 @@ $app->post('/urls/{url_id}/checks', function ($request, $response, $args) use ($
         ]);
 
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
-    } catch (GuzzleHttp\Exception\RequestException $e) {
+    } catch (RequestException $e) {
         $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
+        error_log("Ошибка подключения: " .  $e->getMessage());
+    } catch (ConnectException $e) {
+        $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
+        error_log("Ошибка подключения: " . $e->getMessage());
     } catch (Exception $e) {
         $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
+        error_log("Unexpected error: " .  $e->getMessage());
     }
-    $route = $this->get('router')->urlFor('show', ['id' => $args['url_id']]);
+
+    $route = $this->get('router')->urlFor('urls.show', ['id' => $args['url_id']]);
+
     return $response->withRedirect($route);
-})->setName('checks');
+})->setName('urls.checks.store');
 
 $app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
     return $this->get('renderer')->render($response->withStatus(404), '404.phtml');
@@ -187,7 +202,7 @@ $app->run();
 function normalizeUrl(string $url): string
 {
     $parsed = parse_url($url);
-    $scheme = $parsed['scheme'] ?? 'http';
+    $scheme = $parsed['scheme'] ?? '';
     $host = $parsed['host'] ?? "";
 
     return strtolower("{$scheme}://{$host}");
@@ -238,7 +253,7 @@ function getFlashData(array $messages): array
         foreach ($messages as $message) {
              $flash = [
                 'type' => $type,
-                'message' => $message
+                'text' => $message
                 ];
         }
     }

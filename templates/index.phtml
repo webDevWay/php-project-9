@@ -9,7 +9,9 @@
                     name="url" 
                     class="form-control form-control-lg"
                     placeholder="https://www.example.com"
-                    value="<?=htmlspecialchars((string)$wrongUrl ?? '') ?>"
+                    <?php if (isset($wrongUrl)): ?>
+                        value="<?= htmlspecialchars((string)$wrongUrl) ?>"
+                    <?php endif; ?>
                 >
                 <input type="submit" class="btn btn-primary btn-lg" value="Проверить">
             </div>

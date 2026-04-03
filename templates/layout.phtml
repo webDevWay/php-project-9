@@ -16,10 +16,10 @@
             <div class="collapse navbar-collapse text-secondary" id="navbarNav" >
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" href="/">Главная</a>
+                        <a class="nav-link text-secondary" href= <?= $router->urlFor('index') ?> >Главная</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-secondary" href="/urls">Сайты</a>
+                        <a class="nav-link text-secondary" href= <?= $router->urlFor('urls') ?> >Сайты</a>
                     </li>
                 </ul>
             </div>
@@ -27,12 +27,16 @@
     </nav>
 
     <main class="container flex-grow-1">
-        <?php if (isset($flash)):?>
-                    <div class="alert alert-<?=$type?> alert-dismissible fade show" role="alert">
-                        <?= htmlspecialchars($flash) ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+         <?php if ($flash): ?>
+            <?php foreach ($flash as $type => $messages): ?>
+                <?php if ($type === 'wrongUrl') continue; ?>
+                <?php foreach ($messages as $message): ?>
+                    <div class="alert alert-<?= htmlspecialchars($type) ?>">
+                        <?= htmlspecialchars($message) ?>
                     </div>
-        <?php endif; ?>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>      
 
         <?= $content ?>
     </main>
