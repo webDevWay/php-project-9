@@ -9,7 +9,6 @@ use DI\Container;
 use Slim\Factory\AppFactory;
 use Slim\Flash\Messages;
 use Slim\Views\PhpRenderer;
-use Slim\Middleware\MethodOverrideMiddleware;
 use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
@@ -38,7 +37,6 @@ $container->set('renderer', function () use ($container) {
     $renderer = new PhpRenderer(__DIR__ . '/../templates');
     $renderer->setLayout('layout.phtml');
     $renderer->addAttribute('router', $container->get('router'));
-    //$renderer->addAttribute('wrongUrl', $container->get('flash')->getFirstMessage('wrongUrl'));
     $renderer->addAttribute('flash', $container->get('flash')->getMessages());
 
     return $renderer;
@@ -62,8 +60,8 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
         $stmt->execute([$url['id']]);
         $res = $stmt->fetch();
 
-        $url['status_code'] = $res['status_code'] ?? "";
-        $url['created_at'] = $res['created_at'] ?? "";
+        $url['status_code'] = $res['status_code'] ?? " - ";
+        $url['created_at'] = $res['created_at'] ?? " - ";
     }
 
     return $this->get('renderer')->render($response, 'urls/index.phtml', [
