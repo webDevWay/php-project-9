@@ -50,7 +50,6 @@ $app->get('/', function ($request, $response) {
 })->setName('index');
 
 $app->get('/urls', function ($request, $response, $args) use ($pdo) {
-    dump($pdo);
     $sql = "SELECT id, name FROM urls ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
