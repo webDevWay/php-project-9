@@ -38,7 +38,7 @@ $container->set('renderer', function () use ($container) {
     $renderer = new PhpRenderer(__DIR__ . '/../templates');
     $renderer->setLayout('layout.phtml');
     $renderer->addAttribute('router', $container->get('router'));
-    $renderer->addAttribute('wrongUrl', $container->get('flash')->getFirstMessage('wrongUrl'));
+    //$renderer->addAttribute('wrongUrl', $container->get('flash')->getFirstMessage('wrongUrl'));
     $renderer->addAttribute('flash', $container->get('flash')->getMessages());
 
     return $renderer;
@@ -82,13 +82,12 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
     if (!$valid->validate()) {
         $errors = $valid->errors('url');
         $error = is_array($errors) ? ($errors[0] ?? '') : '';
+        $flash['danger'] = [$error];
 
-        $this->get('flash')->addMessage('danger', $error);
-        $this->get('flash')->addMessage('wrongUrl', $url['url']);
-
-        $route = $this->get('router')->urlFor('index');
-
-        return $response->withRedirect($route);
+        return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
+            'flash' => $flash,
+            'wrongUrl' => $url['url']
+        ]);
     }
 
     $name = normalizeUrl($url['url']);
@@ -244,18 +243,4 @@ function parseHtmlData(string $html, string $url): array
         error_log("Failed to load HTML: " . $e->getMessage());
     }
     return $data;
-}
-
-function getFlashData(array $messages): array
-{
-    $flash = [];
-    foreach ($messages as $type => $messages) {
-        foreach ($messages as $message) {
-             $flash = [
-                'type' => $type,
-                'text' => $message
-                ];
-        }
-    }
-    return $flash;
 }
