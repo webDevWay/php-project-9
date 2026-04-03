@@ -42,6 +42,6 @@ function dbConnection(): \PDO
 
         return $pdo;
     } catch (\PDOException $e) {
-        throw new RuntimeException('Failed to connect to database', 0, $e);
+        throw new \RuntimeException('Failed to connect to database', 0, $e);
     }
 }
