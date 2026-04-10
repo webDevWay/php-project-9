@@ -20,7 +20,7 @@
 </div>
 
 <h2 class="mb-3 mt-5">Проверки</h2>
-<form method="post" action="/urls/<?=$url['id']?>/checks">
+<form method="post" action=<?= $router->urlFor('urls.checks.store', ['url_id' => $url['id']]) ?> >
     <input type="submit" class="btn btn-primary btn-md" value="Запустить проверку">
 </form>
 <div class="table-responsive mt-2">

@@ -6,9 +6,12 @@ require_once __DIR__ . '/../vendor/autoload.php';
 
 use function App\Database\dbConnection; //$pdo
 use DI\Container;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Factory\AppFactory;
 use Slim\Flash\Messages;
 use Slim\Views\PhpRenderer;
+use Slim\Exception\HttpNotFoundException;
 use Carbon\Carbon;
 use Valitron\Validator;
 use GuzzleHttp\Client;
@@ -43,6 +46,19 @@ $container->set('renderer', function () use ($container) {
 });
 
 $app->addBodyParsingMiddleware();
+
+$app->add(function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($app) {
+    try {
+        return $handler->handle($request);
+    } catch (HttpNotFoundException $e) {
+        $response = $app->getResponseFactory()->createResponse();
+        return $this->get('renderer')->render($response->withStatus(404), '404.phtml');
+    } catch (\Throwable $e) {
+        $response = $app->getResponseFactory()->createResponse();
+        return $this->get('renderer')->render($response->withStatus(500), '500.phtml');
+    }
+});
+
 $app->addErrorMiddleware(true, true, true);
 
 $app->get('/', function ($request, $response) {
@@ -53,19 +69,32 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
     $sql = "SELECT id, name FROM urls ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
+    
+    $sql = "SELECT DISTINCT ON (url_id)
+                url_id, 
+                status_code, 
+                created_at 
+            FROM url_checks 
+            ORDER BY url_id, created_at DESC";
+    $stmt = $pdo->query($sql);
+    $lastChecks = $stmt->fetchAll();
 
-    foreach ($urls as &$url) {
-        $sql = "SELECT status_code, created_at FROM url_checks WHERE url_id = ? ORDER BY created_at DESC LIMIT 1";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$url['id']]);
-        $res = $stmt->fetch();
-
-        $url['status_code'] = $res['status_code'] ?? " - ";
-        $url['created_at'] = $res['created_at'] ?? " - ";
+    $checksMap = [];
+    foreach ($lastChecks as $check) {
+        $checksMap[$check['url_id']] = $check;
     }
+    $urls = array_map(function($url) use ($checksMap) {
+        $check = $checksMap[$url['id']] ?? null;
+        return [
+            'id' => $url['id'],
+            'name' => $url['name'],
+            'last_check' => $check['created_at'] ?? '-',
+            'status_code' => $check['status_code'] ?? '-',
+        ];
+    }, $urls);
 
     return $this->get('renderer')->render($response, 'urls/index.phtml', [
-        'urls' => $urls
+        'urls' => $urls,
     ]);
 })->setName('urls');
 
@@ -98,8 +127,6 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         $this->get('flash')->addMessage('warning', 'Страница уже существует');
 
         $route = $this->get("router")->urlFor('urls.show', ['id' => $url['id']]);
-
-        return $response->withRedirect($route);
     } else {
         $sql = "INSERT INTO urls (name, created_at) VALUES (:name, :created_at)";
         $stmt = $pdo->prepare($sql);
@@ -111,9 +138,8 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         $this->get('flash')->addMessage('success', 'Страница успешно добавлена');
 
         $route = $this->get("router")->urlFor('urls.show', ['id' => $pdo->lastInsertId()]);
-
-        return $response->withRedirect($route);
     }
+    return $response->withRedirect($route);
 });
 
 $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) use ($pdo) {
@@ -129,12 +155,14 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) use ($pdo) 
     $stmt->execute([':id' => $args['id']]);
     $url_check = $stmt->fetchAll();
 
-    foreach ($url_check as &$check) {
-        $check['h1'] = Str::limit((string)$check['h1'], 200, '...');
-        $check['title'] = Str::limit((string)$check['title'], 200, '...');
-        $check['description'] = Str::limit((string)$check['description'], 200, '...');
-    }
-    unset($check);
+    $url_check = array_map(function ($check) {
+        return [
+            ...$check,
+            'h1' => Str::limit((string)$check['h1'], 200, '...'),
+            'title' => Str::limit((string)$check['title'], 200, '...'),
+            'description' => Str::limit((string)$check['description'], 200, '...')
+        ];
+    }, $url_check);
 
     $content = [
         'url' => $url,
@@ -189,10 +217,6 @@ $app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args)
 
     return $response->withRedirect($route);
 })->setName('urls.checks.store');
-
-$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function ($request, $response) {
-    return $this->get('renderer')->render($response->withStatus(404), '404.phtml');
-});
 
 $app->run();
 
