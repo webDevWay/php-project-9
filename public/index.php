@@ -5,6 +5,7 @@ session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use function App\Database\dbConnection; //$pdo
+use App\Helpers;
 use DI\Container;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -117,7 +118,7 @@ $app->post('/urls', function ($request, $response) use ($pdo) {
         ]);
     }
 
-    $name = normalizeUrl($url['url']);
+    $name = Helpers\normalizeUrl($url['url']);
 
     $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
     $stmt->execute(["name" => $name]);
@@ -186,7 +187,7 @@ $app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args)
         $responseGuzzle = $client->get($url['name']);
         $statusCode = $responseGuzzle->getStatusCode();
         $html = (string) $responseGuzzle->getBody();
-        $parsedData = parseHtmlData($html, $url['name']);
+        $parsedData = Helpers\parseHtmlData($html, $url['name']);
         libxml_clear_errors();
 
         $sql = "INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at) 
@@ -219,50 +220,3 @@ $app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args)
 })->setName('urls.checks.store');
 
 $app->run();
-
-function normalizeUrl(string $url): string
-{
-    $parsed = parse_url($url);
-    $scheme = $parsed['scheme'] ?? '';
-    $host = $parsed['host'] ?? "";
-
-    return strtolower("{$scheme}://{$host}");
-}
-
-function parseHtmlData(string $html, string $url): array
-{
-    $data = [
-        'h1' => '',
-        'title' => '',
-        'description' => ''
-    ];
-
-    if (empty($html)) {
-        return $data;
-    }
-
-    $dom = new DOMDocument();
-
-    try {
-        $dom->loadHTML($html);
-
-        $h1Tags = $dom->getElementsByTagName('h1');
-        if ($h1Tags->length > 0 && $h1Tags->item(0) !== null) {
-            $data['h1'] = trim($h1Tags->item(0)->textContent);
-        }
-        $titleTags = $dom->getElementsByTagName('title');
-        if ($titleTags->length > 0 && $titleTags->item(0) !== null) {
-            $data['title'] = trim($titleTags->item(0)->textContent);
-        }
-        $metaTags = $dom->getElementsByTagName('meta');
-        foreach ($metaTags as $meta) {
-            if ($meta->getAttribute('name') === 'description') {
-                $data['description'] = trim($meta->getAttribute('content'));
-                break;
-            }
-        }
-    } catch (Exception $e) {
-        error_log("Failed to load HTML: " . $e->getMessage());
-    }
-    return $data;
-}

@@ -2,19 +2,19 @@
 
 namespace App\Database;
 
-if (file_exists(__DIR__ . '/../.env')) {
-    $env = parse_ini_file(__DIR__ . '/../.env');
-
-    if (is_array($env)) {
-        foreach ($env as $key => $value) {
-            $_ENV[$key] = $value;
-            putenv("$key=$value");
-        }
-    }
-}
-
 function dbConnection(): \PDO
 {
+    if (file_exists(__DIR__ . '/../.env')) {
+        $env = parse_ini_file(__DIR__ . '/../.env');
+
+        if (is_array($env)) {
+            foreach ($env as $key => $value) {
+                $_ENV[$key] = $value;
+                putenv("$key=$value");
+            }
+        }
+    }
+
     $databaseUrl = getenv('DATABASE_URL') ?: $_ENV['DATABASE_URL'] ?? null;
 
     if ($databaseUrl) {
