@@ -69,7 +69,7 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
     $sql = "SELECT id, name FROM urls ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
-    
+
     $sql = "SELECT DISTINCT ON (url_id)
                 url_id, 
                 status_code, 
@@ -83,7 +83,7 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
     foreach ($lastChecks as $check) {
         $checksMap[$check['url_id']] = $check;
     }
-    $urls = array_map(function($url) use ($checksMap) {
+    $urls = array_map(function ($url) use ($checksMap) {
         $check = $checksMap[$url['id']] ?? null;
         return [
             'id' => $url['id'],
