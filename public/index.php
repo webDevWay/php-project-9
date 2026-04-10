@@ -48,7 +48,7 @@ $container->set('renderer', function () use ($container) {
 
 $app->addBodyParsingMiddleware();
 
-$app->add(function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($app) {
+/*$app->add(function (ServerRequestInterface $request, RequestHandlerInterface $handler) use ($app) {
     try {
         return $handler->handle($request);
     } catch (HttpNotFoundException $e) {
@@ -58,7 +58,7 @@ $app->add(function (ServerRequestInterface $request, RequestHandlerInterface $ha
         $response = $app->getResponseFactory()->createResponse();
         return $this->get('renderer')->render($response->withStatus(500), '500.phtml');
     }
-});
+});*/
 
 $app->addErrorMiddleware(true, true, true);
 
