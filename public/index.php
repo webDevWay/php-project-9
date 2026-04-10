@@ -153,20 +153,20 @@ $app->get('/urls/{id:[0-9]+}', function ($request, $response, $args) use ($pdo) 
 
     $stmt = $pdo->prepare("SELECT * FROM url_checks WHERE url_id = :id");
     $stmt->execute([':id' => $args['id']]);
-    $url_check = $stmt->fetchAll();
+    $urlCheck = $stmt->fetchAll();
 
-    $url_check = array_map(function ($check) {
+    $urlCheck = array_map(function ($check) {
         return [
             ...$check,
             'h1' => Str::limit((string)$check['h1'], 200, '...'),
             'title' => Str::limit((string)$check['title'], 200, '...'),
             'description' => Str::limit((string)$check['description'], 200, '...')
         ];
-    }, $url_check);
+    }, $urlCheck);
 
     $content = [
         'url' => $url,
-        'url_check' => $url_check,
+        'url_check' => $urlCheck,
         ];
 
     return $this->get('renderer')->render($response, 'urls/show.phtml', $content);
