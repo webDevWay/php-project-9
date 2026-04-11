@@ -5,7 +5,8 @@ session_start();
 require_once __DIR__ . '/../vendor/autoload.php';
 
 use function App\Database\dbConnection; //$pdo
-use App\Helpers;
+use function App\Helpers\normalizeUrl;
+use function App\Helpers\parseHtmlData;
 use DI\Container;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -66,7 +67,7 @@ $app->get('/', function ($request, $response) {
     return $this->get('renderer')->render($response, 'index.phtml');
 })->setName('index');
 
-$app->get('/urls', function ($request, $response, $args) use ($pdo) {
+$app->get('/urls', function ($request, $response) use ($pdo) {
     $sql = "SELECT id, name FROM urls ORDER BY id DESC";
     $stmt = $pdo->query($sql);
     $urls = $stmt->fetchAll();
@@ -102,23 +103,23 @@ $app->get('/urls', function ($request, $response, $args) use ($pdo) {
 $app->post('/urls', function ($request, $response) use ($pdo) {
     $url = $request->getParsedBody('url');
 
-    $valid = new Validator($url);
-    $valid->rule('required', 'url')->message('URL не должен быть пустым')
+    $validator = new Validator($url);
+    $validator->rule('required', 'url')->message('URL не должен быть пустым')
         ->rule('url', 'url')->message('Некорректный URL')
         ->rule('lengthMax', 'url', 255)->message('Превышено допустимое количество символов');
 
-    if (!$valid->validate()) {
-        $errors = $valid->errors('url');
-        $error = is_array($errors) ? ($errors[0] ?? '') : '';
-        $flash['danger'] = [$error];
+    if (!$validator->validate()) {
+        $errors = $validator->errors('url');
+        $error = is_array($errors) ? $errors[0] : '';
+        $flashError['danger'] = [$error];
 
         return $this->get('renderer')->render($response->withStatus(422), 'index.phtml', [
-            'flash' => $flash,
+            'flash' => $flashError,
             'wrongUrl' => $url['url']
         ]);
     }
 
-    $name = Helpers\normalizeUrl($url['url']);
+    $name = normalizeUrl($url['url']);
 
     $stmt = $pdo->prepare("SELECT * FROM urls WHERE name = :name");
     $stmt->execute(["name" => $name]);
@@ -187,7 +188,7 @@ $app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args)
         $responseGuzzle = $client->get($url['name']);
         $statusCode = $responseGuzzle->getStatusCode();
         $html = (string) $responseGuzzle->getBody();
-        $parsedData = Helpers\parseHtmlData($html, $url['name']);
+        $parsedData = parseHtmlData($html, $url['name']);
         libxml_clear_errors();
 
         $sql = "INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at) 
@@ -201,16 +202,15 @@ $app->post('/urls/{url_id:[0-9]+}/checks', function ($request, $response, $args)
             'description' => $parsedData['description'],
             'created_at' => Carbon::now()
         ]);
-
         $this->get('flash')->addMessage('success', 'Страница успешно проверена');
     } catch (RequestException $e) {
         $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
         error_log("Ошибка подключения: " .  $e->getMessage());
     } catch (ConnectException $e) {
-        $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
+        $this->get('flash')->addMessage('warning', 'Не удалось подключиться к серверу. Проверьте URL и интернет-соединение');
         error_log("Ошибка подключения: " . $e->getMessage());
     } catch (Exception $e) {
-        $this->get('flash')->addMessage('warning', 'Произошла ошибка при проверке, не удалось подключиться');
+        $this->get('flash')->addMessage('warning', 'Произошла непредвиденная ошибка' . $e->getMessage());
         error_log("Unexpected error: " .  $e->getMessage());
     }
 
